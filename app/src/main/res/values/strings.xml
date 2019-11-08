@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RoadRoller</string>
+    <string name="local_mode">本地模式</string>
+    <string name="telecontrol_mode">遥控模式</string>
+    <string name="auto_mode">自动驾驶模式</string>
+    <string name="connect">连接</string>
+    <string name="connecting">连接中</string>
+    <string name="disconnect">断开</string>
+</resources>
