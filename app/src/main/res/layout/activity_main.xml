@@ -29,9 +29,17 @@
             android:layout_alignParentRight="true" />
 
         <ImageView
+            android:id="@+id/bleSignal_icon"
+            android:layout_width="40dp"
+            android:layout_height="30dp"
+            android:layout_toLeftOf="@id/battery_icon"
+            android:visibility="invisible" />
+
+        <ImageView
             android:id="@+id/battery_icon"
             android:layout_width="40dp"
             android:layout_height="30dp"
+            android:layout_marginRight="0dp"
             android:layout_toLeftOf="@id/battery_percent" />
 
     </RelativeLayout>
