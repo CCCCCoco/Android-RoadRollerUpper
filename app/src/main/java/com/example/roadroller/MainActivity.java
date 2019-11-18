@@ -178,7 +178,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 byte[] data = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09};
                 boolean flag = writeCharacteristic(data);
-                Log.d(TAG, "onClick: " + flag);
                 break;
             case R.id.flash:
                 if (flash.isActivated()){
@@ -335,7 +334,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (!bleName.contains(name)) {
                                     bleName.add(device.getName());
                                     bleAddress.add(device.getAddress());
-                                    Log.d(TAG, "name :" + device.getName() + "/n"
+                                    LogUtil.d(TAG, "name :" + device.getName() + "/n"
                                             + "address :" + device.getAddress());
                                     listViewAdapter.notifyDataSetChanged();
                                     bluetoothDeviceRssi = rssi;
@@ -418,13 +417,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 broadcastUpdate(intentAction);
                 gatt.discoverServices();
                 sendMessage(MESSAGE_CONNECTED);
-                Log.d(TAG, "onConnectionStateChange: connected");
+                LogUtil.d(TAG, "onConnectionStateChange: connected");
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(intentAction);
                 sendMessage(MESSAGE_DISCONNECTED);
-                Log.d(TAG, "onConnectionStateChange: disconnect");
+                LogUtil.d(TAG, "onConnectionStateChange: disconnect");
             }
         }
         /*
@@ -437,7 +436,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //匹配UUID
                 displayGattServices(gatt.getServices());
             } else {
-                Log.d(TAG, "onServicesDiscovered received: " + status);
+                LogUtil.d(TAG, "onServicesDiscovered received: " + status);
             }
         }
 
@@ -448,7 +447,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
-            Log.d(TAG, "onCharacteristicRead: 1");
+            LogUtil.d(TAG, "onCharacteristicRead: 1");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             }
@@ -460,7 +459,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            Log.d(TAG, "onCharacteristicWrite: ");
+            LogUtil.d(TAG, "onCharacteristicWrite: ");
         }
 
         @Override
@@ -479,17 +478,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (gattServices == null){
             return;
         }
-        Log.d(TAG, "displayGattServices: 开始匹配");
+        LogUtil.d(TAG, "displayGattServices: 开始匹配");
         String uuid;
         for (BluetoothGattService gattService : gattServices) {
             //获取每个服务的uuid
             uuid = gattService.getUuid().toString();
             //匹配我们的uuid，只要不匹配就跳过继续匹配
             if (!uuid.equals(UUID_HEART_RATE_MEASUREMENT)) {
-                Log.d(TAG, "displayGattServices: 匹配失败");
+                LogUtil.d(TAG, "displayGattServices: 匹配失败");
                 continue;
             }
-            Log.d(TAG, "displayGattServices: 服务UUID匹配");
+            LogUtil.d(TAG, "displayGattServices: 服务UUID匹配");
             List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
             // 上面服务匹配成功后，再匹配特征，其实和上面一样，拿到特定的uuid，匹配上后就可以发送数据了
             for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
@@ -498,7 +497,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!uuid.equals(UUID_READ_CHARACTERISTIC)) {
                     continue;
                 }
-                Log.d(TAG, "displayGattServices: 特征UUID匹配");
+                LogUtil.d(TAG, "displayGattServices: 特征UUID匹配");
                 //发送特征通知，是否启用还特征设备通知。
                 setCharacteristicNotification(gattCharacteristic, true);
             }
@@ -511,16 +510,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic,
                                               boolean enabled) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.d(TAG, "BluetoothAdapter not initialized ");
+            LogUtil.d(TAG, "BluetoothAdapter not initialized ");
             return;
         }
 
         boolean isEnableNotification =  mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
-        Log.d(TAG, "setCharacteristicNotification: " + isEnableNotification);
+        LogUtil.d(TAG, "setCharacteristicNotification: " + isEnableNotification);
         //配置使能接收通知
         if(isEnableNotification) {
             List<BluetoothGattDescriptor> descriptorList = characteristic.getDescriptors();
-            Log.d(TAG, "setCharacteristicNotification: " + descriptorList.size());
+//            LogUtil.d(TAG, "setCharacteristicNotification: " + descriptorList.size());
             if(descriptorList != null && descriptorList.size() > 0) {
                 for(BluetoothGattDescriptor descriptor : descriptorList) {
                     if (enabled) {
@@ -583,7 +582,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else if (ACTION_DATA_AVAILABLE.equals(action)) {
 //                displayData(intent.getStringExtra(EXTRA_DATA));
                 //收到数据通知
-                Log.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
+                LogUtil.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
             }
         }
     };
@@ -606,24 +605,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int format = -1;
             if ((flag & 0x01) != 0) {
                 format = BluetoothGattCharacteristic.FORMAT_UINT16;
-                Log.d(TAG, "Heart rate format UINT16.");
+                LogUtil.d(TAG, "Heart rate format UINT16.");
             } else {
                 format = BluetoothGattCharacteristic.FORMAT_UINT8;
-                Log.d(TAG, "Heart rate format UINT8.");
+                LogUtil.d(TAG, "Heart rate format UINT8.");
             }
             final int heartRate = characteristic.getIntValue(format, 1);
-            Log.d(TAG, String.format("Received heart rate: %d", heartRate));
+            LogUtil.d(TAG, String.format("Received heart rate: %d", heartRate));
             intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         } else {
             // For all other profiles, writes the data formatted in HEX.
             final byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
-                Log.d(TAG, "broadcastUpdate: lenth :" + data.length);
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
                 for(byte byteChar : data)
                     stringBuilder.append(String.format("%02X ", byteChar));
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-                Log.d(TAG, "broadcastUpdate: get :" + stringBuilder.toString());
+                LogUtil.d(TAG, "broadcastUpdate: get :" + stringBuilder.toString());
             }
         }
         sendBroadcast(intent);
