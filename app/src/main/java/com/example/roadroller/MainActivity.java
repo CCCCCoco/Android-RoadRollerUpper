@@ -1,5 +1,6 @@
 package com.example.roadroller;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -20,8 +21,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.media.Image;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -41,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private String TAG = "MainActivity";
 
+    public TextView run_mode_text;
+    public ImageView bleSignal_icon;
     public Button scram;
     public Button flash;
     public Button doubleFlash;
@@ -72,6 +78,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
 
+    private int connectionSignal = SIGNAL_0;
+    private static final int SIGNAL_0 = 0;
+    private static final int SIGNAL_1 = 1;
+    private static final int SIGNAL_2 = 2;
+    private static final int SIGNAL_3 = 3;
+    private static final int SIGNAL_4 = 4;
+
+
     public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
@@ -82,11 +96,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
-
+    //UUID
     private static final String UUID_HEART_RATE_MEASUREMENT = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     private static final String UUID_CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
     private static final String UUID_WRITE_CHARACTERISTIC = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     private static final String UUID_READ_CHARACTERISTIC = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    //message
+    private static final int MESSAGE_CONNECTED = 1;
+    private static final int MESSAGE_DISCONNECTED = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,11 +111,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //全屏，隐藏系统状态栏
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
+        //申请权限
+        registerPermissions();
         //注册广播接收器
         registerReceiver(mBatInfoReceiver, new IntentFilter(
                 Intent.ACTION_BATTERY_CHANGED));
         initBleListview();
         initBluetooth();
+
+        run_mode_text = findViewById(R.id.run_mode_text);
+        bleSignal_icon = (ImageView)findViewById(R.id.bleSignal_icon);
         scram = (Button) findViewById(R.id.scram);
         flash = (Button) findViewById(R.id.flash);
         doubleFlash = (Button) findViewById(R.id.doubleFlash);
@@ -283,6 +305,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /*
+    *蓝牙信号检测
+     */
+    private int checkBleSignal(int rssi){
+        if (rssi <= -30){
+            return SIGNAL_4;
+        }else if ( rssi <= 0){
+            return SIGNAL_3;
+        }else if ( rssi <= 20){
+            return SIGNAL_2;
+        }else if ( rssi < 40){
+            return SIGNAL_1;
+        }else{
+            return SIGNAL_0;
+        }
+    }
+    /*
      *蓝牙扫描回调
      */
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
@@ -300,6 +338,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     Log.d(TAG, "name :" + device.getName() + "/n"
                                             + "address :" + device.getAddress());
                                     listViewAdapter.notifyDataSetChanged();
+                                    bluetoothDeviceRssi = rssi;
+                                    if (checkBleSignal(rssi) != connectionSignal){
+                                        connectionSignal = checkBleSignal(rssi);
+                                        changeRssiIcon(new MyInterface() {
+                                            @Override
+                                            public void changeRssiIcon() {
+                                                switch (connectionSignal){
+                                                    case SIGNAL_0:
+                                                        bleSignal_icon.setImageResource(R.drawable.signal_0);
+                                                        break;
+                                                    case SIGNAL_1:
+                                                        bleSignal_icon.setImageResource(R.drawable.signal_1);
+                                                        break;
+                                                    case SIGNAL_2:
+                                                        bleSignal_icon.setImageResource(R.drawable.signal_2);
+                                                        break;
+                                                    case SIGNAL_3:
+                                                        bleSignal_icon.setImageResource(R.drawable.signal_3);
+                                                        break;
+                                                    case SIGNAL_4:
+                                                        bleSignal_icon.setImageResource(R.drawable.signal_4);
+                                                        break;
+                                                }
+                                            }
+                                        });
+                                    }
+//                                    sendMessage(MESSAGE_RSSI_CHANGE);
+
                                 }
 
                             }
@@ -351,13 +417,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 connectionState = STATE_CONNECTED;
                 broadcastUpdate(intentAction);
                 gatt.discoverServices();
-                alertDialog.cancel();
-                Toast.makeText(MainActivity.this, "已成功连接", Toast.LENGTH_SHORT).show();
+                sendMessage(MESSAGE_CONNECTED);
                 Log.d(TAG, "onConnectionStateChange: connected");
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(intentAction);
+                sendMessage(MESSAGE_DISCONNECTED);
                 Log.d(TAG, "onConnectionStateChange: disconnect");
             }
         }
@@ -562,7 +628,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         sendBroadcast(intent);
     }
+    /*
+    *子线程实现UI更新
+    * MESSAGE_CONNECTED = 1
+    * MESSAGE_DISCONNECTED = 2
+     */
 
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            switch (msg.what){
+                case MESSAGE_CONNECTED:
+                    alertDialog.cancel();
+                    bleSignal_icon.setVisibility(View.VISIBLE);
+                    connect.setText(R.string.disconnect);
+                    Toast.makeText(MainActivity.this, "已成功连接", Toast.LENGTH_SHORT).show();
+                    break;
+                case MESSAGE_DISCONNECTED:
+                    bleSignal_icon.setVisibility(View.INVISIBLE);
+                    connect.setText(R.string.connect);
+                    Toast.makeText(MainActivity.this, "已断开连接", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
+
+    /*
+    * 回调
+     */
+    private interface MyInterface{
+        void changeRssiIcon();
+    }
+
+    private void changeRssiIcon(MyInterface myInterface){
+        myInterface.changeRssiIcon();
+    }
+    /*
+    *发送信息
+     */
+    private void sendMessage(int message){
+        Message msg = new Message();
+        msg.what = message;
+        handler.sendMessage(msg);
+    }
     /*
      *申请权限
      */
