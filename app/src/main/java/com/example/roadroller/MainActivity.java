@@ -21,12 +21,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.media.Image;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -43,6 +41,23 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
+    private byte[] receivePocket = new byte[20];
+    //接受数据包 20字节
+    public byte[] receiveNum = new byte[4];
+    public byte[] receiveData = new byte[4];
+    public byte verticalSpeed;
+    public byte horizontalSpeed;
+    public byte purlingState;
+    public byte receiveFlag;
+    public byte[] coordinate = new byte[8];
+
+    //发送数据包 14字节
+    public final byte sendStart = (byte)0xAA;
+    public byte[] sendNum = new byte[4];
+    public byte[] sendData = new byte[4];
+    public byte sendFlag;
+    public final byte sendEnd =  (byte) 0xBB;
+
     private String TAG = "MainActivity";
 
     public TextView run_mode_text;
@@ -58,14 +73,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public Button speedUp;
     public Button turtleOrRabbit;
     public Button snake;
+    public Button smallSnake;
+    public Button bigSnake;
+    public Button frontSnake;
+    public Button backSnake;
     public Button engine;
     public Button backMid;
     public Button connect;
+    public Button lock;
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mBluetoothGatt;
     private String mBluetoothDeviceAddress;
     private int bluetoothDeviceRssi;
+    private boolean isConnected = false;
 
     private AlertDialog alertDialog;
     private ListView bleListview;
@@ -104,6 +125,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //message
     private static final int MESSAGE_CONNECTED = 1;
     private static final int MESSAGE_DISCONNECTED = 2;
+    //button data
+    private static final byte[] BACK_MIN_DATA = {0x04,0x00,0x00,0x00};//回中4
+    private static final byte[] STOP_DATA = {0x01,0x00,0x00,0x00};//回中4
+    private static final byte[] SNAKE_DATA = {0x00,0x08,0x00,0x00};//振动9
+    private static final byte[] SNAKE_FRONT_DATA = {0x00,0x04,0x00,0x00};//前振10
+    private static final byte[] SNAKE_BIG_DATA = {0x00,0x02,0x00,0x00};//大振11
+    private static final byte[] DOUBLE_FLASH_DATA = {0x00,0x01,0x00,0x00};//双闪12
+    private static final byte[] TRUMPET_DATA = {0x00,0x00,0x20,0x00};//喇叭13
+    private static final byte[] SNAKE_BACK_DATA = {0x00,0x00,0x10,0x00};//后振14
+    private static final byte[] SNAKE_SMALL_DATA = {0x00,0x00,0x08,0x00};//小振15
+    private static final byte[] ENGINE_OPEN_DATA = {0x00,0x00,0x04,0x00};//发动机开16
+    private static final byte[] PURLING_DATA = {0x00,0x00,0x02,0x00};//洒水17
+    private static final byte[] FLASH_DATA = {0x00,0x00,0x01,0x00};//远关灯18
+    private static final byte[] HOLD_CAR_DATA = {0x00,0x00,0x00,0x20};//驻车19
+    private static final byte[] ENGINE_CLOSE_DATA = {0x00,0x00,0x00,0x10};//发动机关20
+    private static final byte[] TURTLE_OR_RABBIT_DATA = {0x00,0x00,0x00,0x08};//龟兔档21
+    private static final byte[] SPEED_UP_DATA = {0x00,0x00,0x00,0x04};//转速+ 22
+    private static final byte[] SPEED_CUT_DATA = {0x00,0x00,0x00,0x02};//转速- 23
+    private static final byte[] LOCK_DATA = {0x00,0x00,0x00,0x01};//锁定24
+    private static final byte[] SCRAM_DATA = {0x00,0x00,0x00,(byte)0x80};//急停 侧1
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,9 +159,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //注册广播接收器
         registerReceiver(mBatInfoReceiver, new IntentFilter(
                 Intent.ACTION_BATTERY_CHANGED));
+        registerReceiver(mGattUpdateReceiver,makeGattUpdateIntentFilter());
         initBleListview();
         initBluetooth();
-
         run_mode_text = findViewById(R.id.run_mode_text);
         bleSignal_icon = (ImageView)findViewById(R.id.bleSignal_icon);
         scram = (Button) findViewById(R.id.scram);
@@ -130,11 +173,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         speedCut = (Button) findViewById(R.id.speedCut);
         speedUp = (Button) findViewById(R.id.speedUp);
         trumpet = (Button) findViewById(R.id.trumpet);
-        turtleOrRabbit = (Button) findViewById(R.id.turtleOrRubbin);
+        turtleOrRabbit = (Button) findViewById(R.id.turtleOrRabbit);
         snake = (Button) findViewById(R.id.snake);
+        smallSnake = findViewById(R.id.smallSnake);
+        bigSnake = findViewById(R.id.bigSnake);
+        frontSnake = findViewById(R.id.frontSnake);
+        backSnake = findViewById(R.id.backSnake);
         engine = (Button) findViewById(R.id.engine);
         backMid = (Button) findViewById(R.id.backMid);
         connect = (Button) findViewById(R.id.connect);
+        lock = findViewById(R.id.lock);
 
         scram.setOnClickListener(this);
         flash.setOnClickListener(this);
@@ -147,9 +195,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         trumpet.setOnClickListener(this);
         turtleOrRabbit.setOnClickListener(this);
         snake.setOnClickListener(this);
+        smallSnake.setOnClickListener(this);
+        bigSnake.setOnClickListener(this);
+        frontSnake.setOnClickListener(this);
+        backSnake.setOnClickListener(this);
         engine.setOnClickListener(this);
         backMid.setOnClickListener(this);
         connect.setOnClickListener(this);
+        lock.setOnClickListener(this);
         //隐藏标题栏
         if (getSupportActionBar() != null){
             getSupportActionBar().hide();
@@ -176,8 +229,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     scram.setActivated(true);
                 }
-                byte[] data = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09};
-                boolean flag = writeCharacteristic(data);
+                writeCharacteristic(sender(SCRAM_DATA),isConnected);
                 break;
             case R.id.flash:
                 if (flash.isActivated()){
@@ -185,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     flash.setActivated(true);
                 }
+                writeCharacteristic(sender(FLASH_DATA),isConnected);
                 break;
             case R.id.doubleFlash:
                 if (doubleFlash.isActivated()){
@@ -192,6 +245,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     doubleFlash.setActivated(true);
                 }
+                writeCharacteristic(sender(DOUBLE_FLASH_DATA),isConnected);
                 break;
             case R.id.holdCar:
                 if (holdCar.isActivated()){
@@ -199,6 +253,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     holdCar.setActivated(true);
                 }
+                writeCharacteristic(sender(HOLD_CAR_DATA),isConnected);
                 break;
             case R.id.purling:
                 if (purling.isActivated()){
@@ -206,32 +261,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     purling.setActivated(true);
                 }
+                writeCharacteristic(sender(PURLING_DATA),isConnected);
                 break;
             case R.id.stop:
-
+                writeCharacteristic(sender(STOP_DATA),isConnected);
                 break;
             case R.id.speedCut:
-
+                writeCharacteristic(sender(SPEED_CUT_DATA),isConnected);
                 break;
             case R.id.speedUp:
-
+                writeCharacteristic(sender(SPEED_UP_DATA),isConnected);
                 break;
             case R.id.trumpet:
-
+                writeCharacteristic(sender(TRUMPET_DATA),isConnected);
                 break;
-            case R.id.turtleOrRubbin:
-                if (turtleOrRabbit.getText().toString() != "龟档"){
-                    turtleOrRabbit.setText("龟档");
-                }else{
+            case R.id.turtleOrRabbit:
+                if (turtleOrRabbit.getText().toString().equals("龟档")){
                     turtleOrRabbit.setText("兔档");
+                }else{
+                    turtleOrRabbit.setText("龟档");
                 }
-
+                writeCharacteristic(sender(TURTLE_OR_RABBIT_DATA),isConnected);
                 break;
             case R.id.engine:
-
+                if (engine.isActivated()){
+                    engine.setActivated(false);
+                    writeCharacteristic(sender(ENGINE_CLOSE_DATA),isConnected);
+                }else{
+                    engine.setActivated(true);
+                    writeCharacteristic(sender(ENGINE_OPEN_DATA),isConnected);
+                }
                 break;
             case R.id.backMid:
-
+                writeCharacteristic(sender(BACK_MIN_DATA),isConnected);
                 break;
             case R.id.snake:
                 if (snake.isActivated()){
@@ -239,6 +301,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }else{
                     snake.setActivated(true);
                 }
+                writeCharacteristic(sender(SNAKE_DATA),isConnected);
+                break;
+            case R.id.smallSnake:
+                writeCharacteristic(sender(SNAKE_SMALL_DATA),isConnected);
+                break;
+            case R.id.bigSnake:
+                writeCharacteristic(sender(SNAKE_BIG_DATA),isConnected);
+                break;
+            case R.id.frontSnake:
+                writeCharacteristic(sender(SNAKE_FRONT_DATA),isConnected);
+                break;
+            case R.id.backSnake:
+                writeCharacteristic(sender(SNAKE_BACK_DATA),isConnected);
+                break;
+            case R.id.lock:
+                writeCharacteristic(sender(LOCK_DATA),isConnected);
+                break;
+            default:
                 break;
         }
     }
@@ -417,12 +497,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 broadcastUpdate(intentAction);
                 gatt.discoverServices();
                 sendMessage(MESSAGE_CONNECTED);
+                isConnected = true;
                 LogUtil.d(TAG, "onConnectionStateChange: connected");
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(intentAction);
                 sendMessage(MESSAGE_DISCONNECTED);
+                isConnected = false;
                 LogUtil.d(TAG, "onConnectionStateChange: disconnect");
             }
         }
@@ -519,7 +601,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //配置使能接收通知
         if(isEnableNotification) {
             List<BluetoothGattDescriptor> descriptorList = characteristic.getDescriptors();
-//            LogUtil.d(TAG, "setCharacteristicNotification: " + descriptorList.size());
             if(descriptorList != null && descriptorList.size() > 0) {
                 for(BluetoothGattDescriptor descriptor : descriptorList) {
                     if (enabled) {
@@ -536,17 +617,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     *蓝牙-写入数据
     * 20字节包
      */
-    private boolean writeCharacteristic(byte[] data){
-        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+    private boolean writeCharacteristic(byte[] data, boolean enable){
+        if (enable) {
+            if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+                return false;
+            }
+            BluetoothGattService mBluetoothGattService = mBluetoothGatt
+                    .getService(UUID.fromString(UUID_HEART_RATE_MEASUREMENT));
+            BluetoothGattCharacteristic characteristic = mBluetoothGattService
+                    .getCharacteristic(UUID.fromString(UUID_WRITE_CHARACTERISTIC));
+            characteristic.setValue(data);
+            mBluetoothGatt.writeCharacteristic(characteristic);
+            return true;
+        }else{
             return false;
         }
-        BluetoothGattService mBluetoothGattService = mBluetoothGatt
-                .getService(UUID.fromString(UUID_HEART_RATE_MEASUREMENT));
-        BluetoothGattCharacteristic characteristic = mBluetoothGattService
-                .getCharacteristic(UUID.fromString(UUID_WRITE_CHARACTERISTIC));
-        characteristic.setValue(data);
-        mBluetoothGatt.writeCharacteristic(characteristic);
-        return true;
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
@@ -582,6 +667,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else if (ACTION_DATA_AVAILABLE.equals(action)) {
 //                displayData(intent.getStringExtra(EXTRA_DATA));
                 //收到数据通知
+                receiver(receivePocket);
                 LogUtil.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
             }
         }
@@ -615,13 +701,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         } else {
             // For all other profiles, writes the data formatted in HEX.
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
+            receivePocket = characteristic.getValue();
+            if (receivePocket != null && receivePocket.length > 0) {
+                final StringBuilder stringBuilder = new StringBuilder(receivePocket.length);
+                LogUtil.d(TAG,"d" + receivePocket.length);
+                for(byte byteChar : receivePocket)
                     stringBuilder.append(String.format("%02X ", byteChar));
-                intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-                LogUtil.d(TAG, "broadcastUpdate: get :" + stringBuilder.toString());
+                intent.putExtra(EXTRA_DATA, new String(receivePocket) + "\n" + stringBuilder.toString());
+//                LogUtil.d(TAG, "broadcastUpdate: get :" + stringBuilder.toString());
             }
         }
         sendBroadcast(intent);
@@ -711,6 +798,73 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 toConnectBle(address);
             }
         });
+    }
+
+    /*
+    *接收存储数据
+     */
+    public void receiver(byte[] data){
+        receiveNum[0] = data[0];
+        receiveNum[1] = data[1];
+        receiveNum[2] = data[2];
+        receiveNum[3] = data[3];
+        receiveData[0] = data[4];
+        receiveData[1] = data[5];
+        receiveData[2] = data[6];
+        receiveData[3] = data[7];
+        verticalSpeed = data[8];
+        horizontalSpeed = data[9];
+        purlingState = data[10];
+        receiveFlag = data[11];
+        coordinate[0] = data[12];
+        coordinate[1] = data[13];
+        coordinate[2] = data[14];
+        coordinate[3] = data[15];
+        coordinate[4] = data[16];
+        coordinate[5] = data[17];
+        coordinate[6] = data[18];
+        coordinate[7] = data[19];
+    }
+    /*
+    *发送数据包
+     */
+    public byte[] sender(byte[] data){
+        byte check = 0;
+        byte[] sendData = new byte[14];
+        senderNum();
+        sendData[0] = sendStart;
+        sendData[1] = sendNum[0];
+        sendData[2] = sendNum[1];
+        sendData[3] = sendNum[2];
+        sendData[4] = sendNum[3];
+        sendData[5] = data[0];
+        sendData[6] = data[1];
+        sendData[7] = data[2];
+        sendData[8] = data[3];
+        sendData[9] = verticalSpeed;
+        sendData[10] = horizontalSpeed;
+        sendData[12] = sendFlag;
+        sendData[13] = sendEnd;
+        for (int i = 0;i < 11;i++){
+            check += sendData[i];
+        }
+        sendData[11] = check;
+        return sendData;
+    }
+    /*
+    *发送包计数
+    * 发送一次包，累计+1
+     */
+    private void senderNum(){
+        if (sendNum[3] != (byte)0xFF){
+            sendNum[3] += 1;
+        }else if (sendNum[2] != (byte)0xff){
+            sendNum[2] +=1;
+        }else if (sendNum[1] != (byte)0xff){
+            sendNum[1] +=1;
+        }else if (sendNum[0] != (byte)0xff){
+            sendNum[0] +=1;
+        }
     }
 }
 
