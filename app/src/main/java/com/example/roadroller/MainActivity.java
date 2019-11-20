@@ -25,6 +25,7 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
 
-    private int connectionSignal = SIGNAL_0;
+    private int connectionSignal ;
     private static final int SIGNAL_0 = 0;
     private static final int SIGNAL_1 = 1;
     private static final int SIGNAL_2 = 2;
@@ -162,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         registerReceiver(mGattUpdateReceiver,makeGattUpdateIntentFilter());
         initBleListview();
         initBluetooth();
-        run_mode_text = findViewById(R.id.run_mode_text);
+        run_mode_text = (TextView)findViewById(R.id.run_mode_text);
         bleSignal_icon = (ImageView)findViewById(R.id.bleSignal_icon);
         scram = (Button) findViewById(R.id.scram);
         flash = (Button) findViewById(R.id.flash);
@@ -208,6 +209,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             getSupportActionBar().hide();
         }
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        final Handler rssiHandler=new Handler();
+
+        rssiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (isConnected){
+                    getRssiVal();
+                }
+                rssiHandler.postDelayed(this,1000);
+            }
+        },1000);
     }
 
     @Override
@@ -387,16 +404,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     *蓝牙信号检测
      */
     private int checkBleSignal(int rssi){
-        if (rssi <= -30){
-            return SIGNAL_4;
-        }else if ( rssi <= 0){
-            return SIGNAL_3;
-        }else if ( rssi <= 20){
-            return SIGNAL_2;
-        }else if ( rssi < 40){
-            return SIGNAL_1;
-        }else{
+        if (rssi <= -100){
             return SIGNAL_0;
+        }else if ( rssi <= -80){
+            return SIGNAL_1;
+        }else if ( rssi <= -70){
+            return SIGNAL_2;
+        }else if ( rssi <= -60){
+            return SIGNAL_3;
+        }else{
+            return SIGNAL_4;
         }
     }
     /*
@@ -418,32 +435,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             + "address :" + device.getAddress());
                                     listViewAdapter.notifyDataSetChanged();
                                     bluetoothDeviceRssi = rssi;
-                                    if (checkBleSignal(rssi) != connectionSignal){
-                                        connectionSignal = checkBleSignal(rssi);
-                                        changeRssiIcon(new MyInterface() {
-                                            @Override
-                                            public void changeRssiIcon() {
-                                                switch (connectionSignal){
-                                                    case SIGNAL_0:
-                                                        bleSignal_icon.setImageResource(R.drawable.signal_0);
-                                                        break;
-                                                    case SIGNAL_1:
-                                                        bleSignal_icon.setImageResource(R.drawable.signal_1);
-                                                        break;
-                                                    case SIGNAL_2:
-                                                        bleSignal_icon.setImageResource(R.drawable.signal_2);
-                                                        break;
-                                                    case SIGNAL_3:
-                                                        bleSignal_icon.setImageResource(R.drawable.signal_3);
-                                                        break;
-                                                    case SIGNAL_4:
-                                                        bleSignal_icon.setImageResource(R.drawable.signal_4);
-                                                        break;
-                                                }
-                                            }
-                                        });
-                                    }
-//                                    sendMessage(MESSAGE_RSSI_CHANGE);
 
                                 }
 
@@ -483,10 +474,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return true;
     }
 
+    public boolean getRssiVal() {
+        if (mBluetoothGatt == null)
+            return false;
+        return mBluetoothGatt.readRemoteRssi();
+
+    }
+
     /*
      *蓝牙连接回调
      */
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
+        //获取连接设备RSSI
+        @Override
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            super.onReadRemoteRssi(gatt, rssi, status);
+            Log.d(TAG, "onReceive: same" + rssi);
+            if (checkBleSignal(rssi) != connectionSignal){
+                connectionSignal = checkBleSignal(rssi);
+                changeRssiIcon(new MyInterface() {
+                    @Override
+                    public void changeRssiIcon() {
+                        switch (connectionSignal){
+                            case SIGNAL_0:
+                                bleSignal_icon.setImageResource(R.drawable.signal_0);
+                                break;
+                            case SIGNAL_1:
+                                bleSignal_icon.setImageResource(R.drawable.signal_1);
+                                break;
+                            case SIGNAL_2:
+                                bleSignal_icon.setImageResource(R.drawable.signal_2);
+                                break;
+                            case SIGNAL_3:
+                                bleSignal_icon.setImageResource(R.drawable.signal_3);
+                                break;
+                            case SIGNAL_4:
+                                bleSignal_icon.setImageResource(R.drawable.signal_4);
+                                break;
+                        }
+                    }
+                });
+            }
+        }
+
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             String intentAction;
@@ -507,6 +537,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 isConnected = false;
                 LogUtil.d(TAG, "onConnectionStateChange: disconnect");
             }
+
+
         }
         /*
         *发现设备服务回调
@@ -640,6 +672,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         intentFilter.addAction(ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
         return intentFilter;
     }
 
@@ -669,6 +702,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //收到数据通知
                 receiver(receivePocket);
                 LogUtil.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
+            }else if (BluetoothDevice.ACTION_FOUND.equals(action)){
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                int rssi = intent.getExtras().getShort(BluetoothDevice.EXTRA_RSSI);//获取额外rssi值
+                if (device.getAddress().equals(mBluetoothDeviceAddress)){
+                    Log.d(TAG, "onReceive: same" + rssi);
+                }
             }
         }
     };
