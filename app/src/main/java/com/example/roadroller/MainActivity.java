@@ -42,7 +42,7 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private byte[] receivePocket = new byte[20];
+    public byte[] receivePocket = new byte[20];
     //接受数据包 20字节
     public byte[] receiveNum = new byte[4];
     public byte[] receiveData = new byte[4];
@@ -82,11 +82,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public Button backMid;
     public Button connect;
     public Button lock;
+    private RockerView rockerView;
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mBluetoothGatt;
     private String mBluetoothDeviceAddress;
-    private int bluetoothDeviceRssi;
     private boolean isConnected = false;
 
     private AlertDialog alertDialog;
@@ -107,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int SIGNAL_3 = 3;
     private static final int SIGNAL_4 = 4;
 
-
     public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
@@ -118,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
-    //UUID
+
     private static final String UUID_HEART_RATE_MEASUREMENT = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     private static final String UUID_CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
     private static final String UUID_WRITE_CHARACTERISTIC = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -147,22 +146,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final byte[] LOCK_DATA = {0x00,0x00,0x00,0x01};//锁定24
     private static final byte[] SCRAM_DATA = {0x00,0x00,0x00,(byte)0x80};//急停 侧1
 
-
-
+    public int i = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //全屏，隐藏系统状态栏
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
-        //申请权限
-        registerPermissions();
         //注册广播接收器
         registerReceiver(mBatInfoReceiver, new IntentFilter(
                 Intent.ACTION_BATTERY_CHANGED));
         registerReceiver(mGattUpdateReceiver,makeGattUpdateIntentFilter());
         initBleListview();
         initBluetooth();
+
         run_mode_text = (TextView)findViewById(R.id.run_mode_text);
         bleSignal_icon = (ImageView)findViewById(R.id.bleSignal_icon);
         scram = (Button) findViewById(R.id.scram);
@@ -184,6 +181,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         backMid = (Button) findViewById(R.id.backMid);
         connect = (Button) findViewById(R.id.connect);
         lock = findViewById(R.id.lock);
+        rockerView = findViewById(R.id.rockerView);
+
 
         scram.setOnClickListener(this);
         flash.setOnClickListener(this);
@@ -208,7 +207,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (getSupportActionBar() != null){
             getSupportActionBar().hide();
         }
-
     }
 
     @Override
@@ -219,12 +217,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         rssiHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "run: " + rockerView.nowSpeedGear + rockerView.nowDirectionGear);
+
+                i++;
                 if (isConnected){
-                    getRssiVal();
+                    if (i >= 10) {
+                        i = 0;
+                        getRssiVal();
+                    }
+                    onSpeedGear(rockerView.nowSpeedGear != rockerView.speedGear);
+//                    if (mBluetoothGatt != null) {
+//                        BluetoothGattService mBluetoothGattService = mBluetoothGatt
+//                                .getService(UUID.fromString(UUID_HEART_RATE_MEASUREMENT));
+//                        if (mBluetoothGattService != null) {
+//                            BluetoothGattCharacteristic characteristic = mBluetoothGattService
+//                                    .getCharacteristic(UUID.fromString(UUID_READ_CHARACTERISTIC));
+//                            mBluetoothGatt.readCharacteristic(characteristic);
+//                        }
+//                    }
                 }
-                rssiHandler.postDelayed(this,1000);
+                rssiHandler.postDelayed(this,100);
             }
-        },1000);
+        },100);
     }
 
     @Override
@@ -400,8 +414,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
+
     /*
-    *蓝牙信号检测
+     *蓝牙信号检测
      */
     private int checkBleSignal(int rssi){
         if (rssi <= -100){
@@ -416,6 +431,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return SIGNAL_4;
         }
     }
+
+    public boolean getRssiVal() {
+        if (mBluetoothGatt == null)
+            return false;
+        return mBluetoothGatt.readRemoteRssi();
+
+    }
+
     /*
      *蓝牙扫描回调
      */
@@ -431,11 +454,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (!bleName.contains(name)) {
                                     bleName.add(device.getName());
                                     bleAddress.add(device.getAddress());
-                                    LogUtil.d(TAG, "name :" + device.getName() + "/n"
+                                    Log.d(TAG, "name :" + device.getName() + "/n"
                                             + "address :" + device.getAddress());
                                     listViewAdapter.notifyDataSetChanged();
-                                    bluetoothDeviceRssi = rssi;
-
                                 }
 
                             }
@@ -446,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     /*
-     *连接蓝牙
+     *去连接蓝牙
      */
     public boolean toConnectBle(final String address) {
         if (mBluetoothAdapter == null || address == null) {
@@ -474,22 +495,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return true;
     }
 
-    public boolean getRssiVal() {
-        if (mBluetoothGatt == null)
-            return false;
-        return mBluetoothGatt.readRemoteRssi();
-
-    }
-
     /*
      *蓝牙连接回调
      */
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
-        //获取连接设备RSSI
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             super.onReadRemoteRssi(gatt, rssi, status);
-            Log.d(TAG, "onReceive: same" + rssi);
+//            Log.d(TAG, "onReceive: same" + rssi);
             if (checkBleSignal(rssi) != connectionSignal){
                 connectionSignal = checkBleSignal(rssi);
                 changeRssiIcon(new MyInterface() {
@@ -511,12 +524,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             case SIGNAL_4:
                                 bleSignal_icon.setImageResource(R.drawable.signal_4);
                                 break;
+                            default:
+                                break;
                         }
                     }
                 });
             }
         }
 
+        /*
+         *蓝牙状态改变回调
+         */
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             String intentAction;
@@ -528,17 +546,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 gatt.discoverServices();
                 sendMessage(MESSAGE_CONNECTED);
                 isConnected = true;
-                LogUtil.d(TAG, "onConnectionStateChange: connected");
+                Log.d(TAG, "onConnectionStateChange: connected");
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(intentAction);
                 sendMessage(MESSAGE_DISCONNECTED);
                 isConnected = false;
-                LogUtil.d(TAG, "onConnectionStateChange: disconnect");
+                Log.d(TAG, "onConnectionStateChange: disconnect");
             }
-
-
         }
         /*
         *发现设备服务回调
@@ -550,7 +566,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //匹配UUID
                 displayGattServices(gatt.getServices());
             } else {
-                LogUtil.d(TAG, "onServicesDiscovered received: " + status);
+                Log.d(TAG, "onServicesDiscovered received: " + status);
             }
         }
 
@@ -561,7 +577,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
-            LogUtil.d(TAG, "onCharacteristicRead: 1");
+            Log.d(TAG, "onCharacteristicRead: 1");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             }
@@ -573,7 +589,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            LogUtil.d(TAG, "onCharacteristicWrite: ");
+            Log.d(TAG, "onCharacteristicWrite: ");
+        }
+
+        @Override
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorRead(gatt, descriptor, status);
+            Log.d(TAG, "onDescriptorRead: ");
         }
 
         @Override
@@ -592,17 +614,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (gattServices == null){
             return;
         }
-        LogUtil.d(TAG, "displayGattServices: 开始匹配");
+        Log.d(TAG, "displayGattServices: 开始匹配");
         String uuid;
         for (BluetoothGattService gattService : gattServices) {
             //获取每个服务的uuid
             uuid = gattService.getUuid().toString();
             //匹配我们的uuid，只要不匹配就跳过继续匹配
             if (!uuid.equals(UUID_HEART_RATE_MEASUREMENT)) {
-                LogUtil.d(TAG, "displayGattServices: 匹配失败");
+                Log.d(TAG, "displayGattServices: 匹配失败");
                 continue;
             }
-            LogUtil.d(TAG, "displayGattServices: 服务UUID匹配");
+            Log.d(TAG, "displayGattServices: 服务UUID匹配");
             List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
             // 上面服务匹配成功后，再匹配特征，其实和上面一样，拿到特定的uuid，匹配上后就可以发送数据了
             for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
@@ -611,7 +633,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!uuid.equals(UUID_READ_CHARACTERISTIC)) {
                     continue;
                 }
-                LogUtil.d(TAG, "displayGattServices: 特征UUID匹配");
+                Log.d(TAG, "displayGattServices: 特征UUID匹配");
                 //发送特征通知，是否启用还特征设备通知。
                 setCharacteristicNotification(gattCharacteristic, true);
             }
@@ -624,15 +646,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic,
                                               boolean enabled) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            LogUtil.d(TAG, "BluetoothAdapter not initialized ");
+            Log.d(TAG, "BluetoothAdapter not initialized ");
             return;
         }
 
         boolean isEnableNotification =  mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
-        LogUtil.d(TAG, "setCharacteristicNotification: " + isEnableNotification);
+        Log.d(TAG, "setCharacteristicNotification: " + isEnableNotification);
         //配置使能接收通知
         if(isEnableNotification) {
             List<BluetoothGattDescriptor> descriptorList = characteristic.getDescriptors();
+            Log.d(TAG, "setCharacteristicNotification: " + descriptorList.size());
             if(descriptorList != null && descriptorList.size() > 0) {
                 for(BluetoothGattDescriptor descriptor : descriptorList) {
                     if (enabled) {
@@ -660,6 +683,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     .getCharacteristic(UUID.fromString(UUID_WRITE_CHARACTERISTIC));
             characteristic.setValue(data);
             mBluetoothGatt.writeCharacteristic(characteristic);
+//            mBluetoothGatt.readCharacteristic(characteristic);
             return true;
         }else{
             return false;
@@ -672,7 +696,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         intentFilter.addAction(ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(ACTION_DATA_AVAILABLE);
-        intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
         return intentFilter;
     }
 
@@ -696,18 +719,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 // 在用户接口上展示所有的services and characteristics
 //                displayGattServices(getSupportedGattServices());
 //                displayGattServices(mBluetoothGatt.getServices());
-
             } else if (ACTION_DATA_AVAILABLE.equals(action)) {
+                receiver(receivePocket);
 //                displayData(intent.getStringExtra(EXTRA_DATA));
                 //收到数据通知
-                receiver(receivePocket);
-                LogUtil.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
-            }else if (BluetoothDevice.ACTION_FOUND.equals(action)){
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                int rssi = intent.getExtras().getShort(BluetoothDevice.EXTRA_RSSI);//获取额外rssi值
-                if (device.getAddress().equals(mBluetoothDeviceAddress)){
-                    Log.d(TAG, "onReceive: same" + rssi);
-                }
+                Log.d(TAG, "onReceive: get " + intent.getStringExtra(EXTRA_DATA));
             }
         }
     };
@@ -730,34 +746,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int format = -1;
             if ((flag & 0x01) != 0) {
                 format = BluetoothGattCharacteristic.FORMAT_UINT16;
-                LogUtil.d(TAG, "Heart rate format UINT16.");
+                Log.d(TAG, "Heart rate format UINT16.");
             } else {
                 format = BluetoothGattCharacteristic.FORMAT_UINT8;
-                LogUtil.d(TAG, "Heart rate format UINT8.");
+                Log.d(TAG, "Heart rate format UINT8.");
             }
             final int heartRate = characteristic.getIntValue(format, 1);
-            LogUtil.d(TAG, String.format("Received heart rate: %d", heartRate));
+            Log.d(TAG, String.format("Received heart rate: %d", heartRate));
             intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         } else {
-            // For all other profiles, writes the data formatted in HEX.
             receivePocket = characteristic.getValue();
-            if (receivePocket != null && receivePocket.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(receivePocket.length);
-                LogUtil.d(TAG,"d" + receivePocket.length);
-                for(byte byteChar : receivePocket)
-                    stringBuilder.append(String.format("%02X ", byteChar));
-                intent.putExtra(EXTRA_DATA, new String(receivePocket) + "\n" + stringBuilder.toString());
-//                LogUtil.d(TAG, "broadcastUpdate: get :" + stringBuilder.toString());
-            }
+//            if (receivePocket != null && receivePocket.length > 0) {
+//                final StringBuilder stringBuilder = new StringBuilder(receivePocket.length);
+//                for(byte byteChar : receivePocket)
+//                    stringBuilder.append(String.format("%02X ", byteChar));
+//                intent.putExtra(EXTRA_DATA, new String(receivePocket) + "\n" + stringBuilder.toString());
+//            }
         }
         sendBroadcast(intent);
     }
     /*
-    *子线程实现UI更新
-    * MESSAGE_CONNECTED = 1
-    * MESSAGE_DISCONNECTED = 2
+     *子线程实现UI更新
+     * MESSAGE_CONNECTED = 1
+     * MESSAGE_DISCONNECTED = 2
      */
-
     Handler handler = new Handler(){
         @Override
         public void handleMessage(@NonNull Message msg) {
@@ -778,7 +790,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     /*
-    * 回调
+     * 回调
      */
     private interface MyInterface{
         void changeRssiIcon();
@@ -788,13 +800,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         myInterface.changeRssiIcon();
     }
     /*
-    *发送信息
+     *发送信息
      */
     private void sendMessage(int message){
         Message msg = new Message();
         msg.what = message;
         handler.sendMessage(msg);
     }
+
     /*
      *申请权限
      */
@@ -840,7 +853,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /*
-    *接收存储数据
+     *接收存储数据
      */
     public void receiver(byte[] data){
         receiveNum[0] = data[0];
@@ -865,7 +878,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         coordinate[7] = data[19];
     }
     /*
-    *发送数据包
+     *发送数据包
      */
     public byte[] sender(byte[] data){
         byte check = 0;
@@ -891,8 +904,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return sendData;
     }
     /*
-    *发送包计数
-    * 发送一次包，累计+1
+     *发送包计数
+     * 发送一次包，累计+1
      */
     private void senderNum(){
         if (sendNum[3] != (byte)0xFF){
@@ -903,6 +916,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             sendNum[1] +=1;
         }else if (sendNum[0] != (byte)0xff){
             sendNum[0] +=1;
+        }
+    }
+
+    /**
+     * 速度档位发生变化
+     * 发送数据包
+     */
+    private void onSpeedGear(boolean enable) {
+        if (enable) {
+            int i = 0;
+            if (rockerView.nowSpeedGear < rockerView.speedGear) {
+                Log.d(TAG, "onSpeedGear: " + rockerView.speedGear + rockerView.nowSpeedGear);
+                for (i = 0; i < (rockerView.speedGear - rockerView.nowSpeedGear); ) {
+                    if (writeCharacteristic(sender(SPEED_CUT_DATA), isConnected))
+                        i++;
+                    //延时5ms
+                    try {
+                        Thread.currentThread().sleep(3);
+                    } catch (InterruptedException e) { }
+                }
+
+            } else {
+                for (i = 0; i < rockerView.nowSpeedGear - rockerView.speedGear; ) {
+                    Log.d(TAG, "onSpeedGear: " + rockerView.speedGear + rockerView.nowSpeedGear);
+                    if (writeCharacteristic(sender(SPEED_UP_DATA), isConnected))
+                        i++;
+                    //延时5ms
+                    try {
+                        Thread.currentThread().sleep(3);
+                    } catch (InterruptedException e) { }
+                }
+            }
+            rockerView.speedGear = rockerView.nowSpeedGear;
         }
     }
 }
