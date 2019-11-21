@@ -33,6 +33,7 @@
             android:layout_width="40dp"
             android:layout_height="30dp"
             android:layout_toLeftOf="@id/battery_icon"
+            android:src="@drawable/signal_4"
             android:visibility="invisible" />
 
         <ImageView
@@ -296,7 +297,7 @@
         android:textSize="30dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline6"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.071"
+        app:layout_constraintHorizontal_bias="0.935"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline3"
         app:layout_constraintVertical_bias="0.0" />
@@ -311,13 +312,13 @@
         android:textSize="30dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline6"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.93"
+        app:layout_constraintHorizontal_bias="0.062"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline3"
         app:layout_constraintVertical_bias="0.0" />
 
     <com.example.roadroller.RockerView
-        android:id="@+id/mSurfaceView"
+        android:id="@+id/rockerView"
         android:layout_width="767dp"
         android:layout_height="329dp"
         android:layout_centerInParent="true"
