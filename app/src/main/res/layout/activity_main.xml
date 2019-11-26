@@ -8,6 +8,7 @@
     tools:context=".MainActivity">
 
     <RelativeLayout
+        android:id="@+id/relativeLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
@@ -32,7 +33,7 @@
             android:id="@+id/bleSignal_icon"
             android:layout_width="40dp"
             android:layout_height="30dp"
-            android:layout_toLeftOf="@id/battery_icon"
+            android:layout_toStartOf="@id/battery_icon"
             android:src="@drawable/signal_4"
             android:visibility="invisible" />
 
@@ -40,18 +41,20 @@
             android:id="@+id/battery_icon"
             android:layout_width="40dp"
             android:layout_height="30dp"
-            android:layout_marginRight="0dp"
-            android:layout_toLeftOf="@id/battery_percent" />
+            android:layout_marginEnd="0dp"
+            android:layout_toStartOf="@id/battery_percent" />
 
     </RelativeLayout>
 
     <Button
         android:id="@+id/scram"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
+
         android:scrollbarSize="4dp"
-        android:text="急停"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/scram"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -60,11 +63,12 @@
 
     <Button
         android:id="@+id/purling"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="洒水"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/purling"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -73,11 +77,12 @@
 
     <Button
         android:id="@+id/holdCar"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="驻车"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/holdCar"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -86,37 +91,68 @@
 
     <Button
         android:id="@+id/flash"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="灯光"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/flash"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline" />
+        app:layout_constraintTop_toBottomOf="@+id/lock" />
+
+    <Button
+        android:id="@+id/lock"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:enabled="false"
+        android:background="@drawable/button_bg_color"
+        android:scrollbarSize="4dp"
+        android:text="@string/lock"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline3" />
 
     <Button
         android:id="@+id/stop"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="停止"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/stop"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline" />
+        app:layout_constraintTop_toBottomOf="@+id/turtleOrRabbit" />
+
+    <Button
+        android:id="@+id/turtleOrRabbit"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
+        android:scrollbarSize="4dp"
+        android:text="@string/turtleOrRabbit"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline3" />
 
     <Button
         android:id="@+id/doubleFlash"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="双闪"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/doubleFlash"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -125,11 +161,12 @@
 
     <Button
         android:id="@+id/trumpet"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="喇叭"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/trumpet"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -138,11 +175,12 @@
 
     <Button
         android:id="@+id/speedCut"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="转速-"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/speedCut"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
 
@@ -150,30 +188,29 @@
         app:layout_constraintTop_toTopOf="@+id/guideline2"
         app:layout_constraintVertical_bias="0.0" />
 
+
     <Button
-        android:id="@+id/turtleOrRabbit"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:id="@+id/engineClose"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:enabled="false"
+        android:background="@drawable/button_bg_color"
         android:scrollbarSize="4dp"
-        android:text="龟兔档"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/engineClose"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toEndOf="@+id/snake"
+        app:layout_constraintStart_toEndOf="@+id/engineOpen"
         app:layout_constraintTop_toTopOf="@+id/guideline2"
         app:layout_constraintVertical_bias="0.0" />
 
     <Button
-        android:id="@+id/engine"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
-        android:layout_marginStart="104dp"
+        android:id="@+id/engineOpen"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="发动机"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/engineOpen"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -182,25 +219,27 @@
 
     <Button
         android:id="@+id/speedUp"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="转速+"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/speedUp"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/engine"
+        app:layout_constraintStart_toEndOf="@+id/engineClose"
         app:layout_constraintTop_toTopOf="@+id/guideline2"
         app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/bigSnake"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
         android:layout_marginEnd="548dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="大振"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/bigSnake"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
 
@@ -212,12 +251,13 @@
 
     <Button
         android:id="@+id/smallSnake"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
         android:layout_marginEnd="532dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="小振"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/smallSnake"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
 
@@ -229,26 +269,28 @@
 
     <Button
         android:id="@+id/snake"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="震动"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/snake"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/backSnake"
         app:layout_constraintTop_toTopOf="@+id/guideline2"
-        app:layout_constraintVertical_bias="0.25" />
+        app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/frontSnake"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="前振"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/frontSnake"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -259,12 +301,13 @@
 
     <Button
         android:id="@+id/backSnake"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
+        android:layout_width="90dp"
+        android:layout_height="80dp"
         android:layout_marginEnd="288dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="后振"
-        android:textColor="@drawable/button_color_selector"
+        android:text="@string/backSnake"
         android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -275,12 +318,12 @@
 
     <Button
         android:id="@+id/backMid"
-        android:layout_width="120dp"
-        android:layout_height="100dp"
-        android:layout_marginTop="4dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:background="@drawable/button_bg_color"
+        android:enabled="false"
         android:scrollbarSize="4dp"
-        android:text="回中"
-        android:textColor="@drawable/button_press_color_selector"
+        android:text="@string/backMid"
         android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -288,16 +331,17 @@
         app:layout_constraintTop_toBottomOf="@+id/holdCar" />
 
     <Button
-        android:id="@+id/lock"
+        android:id="@+id/mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:background="@drawable/button_shape"
-        android:text="@string/lock"
-        android:textSize="30dp"
+        android:text="@string/mode"
+        android:textSize="30sp"
+        android:textColor="@drawable/button_press_color_selector"
         app:layout_constraintBottom_toTopOf="@+id/guideline6"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.935"
+        app:layout_constraintHorizontal_bias="0.825"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline3"
         app:layout_constraintVertical_bias="0.0" />
@@ -309,30 +353,24 @@
         android:layout_marginTop="12dp"
         android:background="@drawable/button_shape"
         android:text="@string/connect"
-        android:textSize="30dp"
+        android:textColor="@drawable/button_press_color_selector"
+        android:textSize="30sp"
         app:layout_constraintBottom_toTopOf="@+id/guideline6"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.062"
+        app:layout_constraintHorizontal_bias="0.148"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline3"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.058" />
 
     <com.example.roadroller.RockerView
         android:id="@+id/rockerView"
-        android:layout_width="767dp"
-        android:layout_height="329dp"
+        android:layout_width="483dp"
+        android:layout_height="287dp"
         android:layout_centerInParent="true"
         app:layout_constraintEnd_toStartOf="@+id/guideline9"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/guideline7"
         app:layout_constraintTop_toTopOf="@+id/guideline6" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.23" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -346,14 +384,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.21" />
+        app:layout_constraintGuide_percent="0.22" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.23" />
+        app:layout_constraintGuide_percent="0.14" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
@@ -379,14 +417,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.2" />
+        app:layout_constraintGuide_percent="0.18" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline9"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.79765624" />
+        app:layout_constraintGuide_percent="0.65" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="20dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
