@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">RoadRoller</string>
+    <string name="mode">mode</string>
     <string name="local_mode">本地模式</string>
     <string name="telecontrol_mode">遥控模式</string>
     <string name="auto_mode">自动驾驶模式</string>
@@ -7,4 +8,22 @@
     <string name="connecting">连接中</string>
     <string name="disconnect">断开</string>
     <string name="lock">锁定</string>
+    <string name="scram">急停</string>
+    <string name="holdCar">驻车</string>
+    <string name="flash">灯光</string>
+    <string name="stop">停止</string>
+    <string name="doubleFlash">双闪</string>
+    <string name="trumpet">喇叭</string>
+    <string name="speedCut">-</string>
+    <string name="purling">洒水</string>
+    <string name="speedUp">+</string>
+    <string name="turtleOrRabbit">龟兔</string>
+    <string name="engineOpen">开</string>
+    <string name="engineClose">关</string>
+    <string name="smallSnake">小振</string>
+    <string name="bigSnake">大振</string>
+    <string name="snake">震动</string>
+    <string name="frontSnake">前振</string>
+    <string name="backSnake">后振</string>
+    <string name="backMid">回中</string>
 </resources>
